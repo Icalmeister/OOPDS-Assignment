@@ -1,3 +1,36 @@
+
+/**********|**********|**********|
+Program: assignment.cpp
+Course: Data Structures and Algorithms
+Trimester: 2410
+Name: Wisyal Faridz Aimizil bin Mohd Fauzi
+ID: 1221304904
+Lecture Section: TC1L
+Tutorial Section: TT4L
+Email: 1221304904@student.mmu.edu.my
+Phone: 018-3553588
+
+Name: Frank Carrano
+ID: 1071001234
+Lecture Section: TC101
+Tutorial Section: TT1L
+Email: abc123@yourmail.com
+Phone: 018-1234567
+
+Name: Frank Carrano
+ID: 1071001234
+Lecture Section: TC101
+Tutorial Section: TT1L
+Email: abc123@yourmail.com
+Phone: 018-1234567
+
+Name: Frank Carrano
+ID: 1071001234
+Lecture Section: TC101
+Tutorial Section: TT1L
+Email: abc123@yourmail.com
+Phone: 018-1234567
+**********|**********|**********/
 #include <iostream>
 #include <fstream>
 #include <vector>
