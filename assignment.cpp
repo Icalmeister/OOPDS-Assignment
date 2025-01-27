@@ -35,6 +35,9 @@ Phone: 018-1234567
 #include <fstream>
 #include <vector>
 #include <string>
+#include <iostream>
+#include <cstdlib> // For rand() and srand()
+#include <ctime>   // For time()
 using namespace std;
 // Constants for battlefield
 const int WIDTH = 10;
@@ -79,6 +82,63 @@ struct Battlefield {
  }
 };
 // Example usage
+
+class ship
+{
+protected:
+    int lives = 3;
+    
+
+public:
+    void damage()
+    {
+        lives--;
+    }
+
+    virtual char spawn();//pure virtual so build your own spawn in the ship
+};
+
+
+class MovingShip : public ship
+{
+public:
+    char spawn() override
+    {
+        return '<';// example of spawn (can change)
+    }
+};
+class shootingShip : public ship
+{
+};
+class SeeingRobot : public ship
+{
+};
+class RamShip : public ship
+{
+};
+
+class BattleShip : public MovingShip, public shootingShip, public SeeingRobot
+{
+};
+class Cruiser : public MovingShip, public RamShip, public SeeingRobot
+{
+};
+class Destroyer : public MovingShip, public shootingShip, public RamShip, public SeeingRobot
+{
+};
+class Frigate : public shootingShip
+{
+};
+class Corvette : public shootingShip, public SeeingRobot
+{
+};
+class Amphibious : public MovingShip, public shootingShip, public SeeingRobot
+{
+};
+class Supership : public MovingShip, public shootingShip, public RamShip, public SeeingRobot
+{
+};
+
 int main() {
  Battlefield battlefield;
  battlefield.initialize();
