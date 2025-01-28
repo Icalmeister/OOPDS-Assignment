@@ -96,12 +96,14 @@ public:
     }
     virtual char spawn();//pure virtual so build your own spawn in the ship
 
-bool move(int &a, int &b, char grid[10][10]);
+
 };
 
 class MovingShip : public ship
 {
 public:
+    bool move(int &a, int &b, char grid[10][10]);
+    
     char spawn() override
     {
         return '<';// example of spawn (can change)
@@ -155,7 +157,7 @@ int main() {
  return 0;
 }
 
-bool ship::move(int &a, int &b, char grid[10][10])
+bool MovingShip::move(int &a, int &b, char grid[10][10])
     {
         char input;
         cout << endl
