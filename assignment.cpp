@@ -83,63 +83,282 @@ struct Battlefield {
 };
 // Example usage
 
-class ship
-{
+int getRandomNumber(int min, int max) {
+    static random_device rd;
+    static mt19937 gen(rd());
+    uniform_int_distribution<> dis(min, max);
+    return dis(gen);
+}
+
+int calculateDistance(int x1, int y1, int x2, int y2) {
+    return abs(x1 - x2) + abs(y1 - y2);
+}
+
+// Base ship class with kills
+class ship {
 protected:
     int lives = 3;
-    
+    int kills = 0;  // Single kills counter for all derived classes
 
 public:
-    void damage()
-    {
-        lives--;
-    }
-    virtual char spawn();//pure virtual so build your own spawn in the ship
-
-
+    void damage() { lives--; }
+    bool isAlive() const { return lives > 0; }
+    void addKill() { kills++; }
+    int getKills() const { return kills; }
+    virtual char spawn() = 0;
 };
 
-class MovingShip : public ship
-{
+class MovingShip : public virtual ship {
+protected:
+    virtual bool canMoveToLocation(char targetCell) const { // Mark as virtual
+        return targetCell == '0';
+    }
+
 public:
-    bool move(int &a, int &b, char grid[10][10]);
+    bool move(int &a, int &b, char grid[10][10]); // Existing move implementation
     
-    char spawn() override
-    {
-        return '<';// example of spawn (can change)
+    char spawn() override { return '<'; }
+    
+    pair<int, int> findNeighborPosition(int currentX, int currentY, char grid[10][10]) {
+        int newX = currentX + getRandomNumber(-1, 1);
+        int newY = currentY + getRandomNumber(-1, 1);
+        newX = max(0, min(9, newX));
+        newY = max(0, min(9, newY));
+        return make_pair(newX, newY);
     }
 };
-class shootingShip : public ship
-{
-};
-class SeeingRobot : public ship
-{
-};
-class RamShip : public ship
-{
+
+// shootingShip class
+class shootingShip : public virtual ship {  // Add virtual inheritance
+protected:
+    static const int MAX_FIRE_DISTANCE = 5;
+    
+    bool canShootAt(int fromX, int fromY, int toX, int toY) const {
+        return calculateDistance(fromX, fromY, toX, toY) <= MAX_FIRE_DISTANCE;
+    }
+    
+    pair<int, int> getRandomTarget(int currentX, int currentY) {
+        int targetX, targetY;
+        do {
+            targetX = getRandomNumber(0, 9);
+            targetY = getRandomNumber(0, 9);
+        } while (!canShootAt(currentX, currentY, targetX, targetY));
+        
+        return make_pair(targetX, targetY);
+    }
+    
+    void fireAt(int targetX, int targetY, char grid[10][10]) {
+        if (grid[targetX][targetY] != '0' && grid[targetX][targetY] != '1') {
+            addKill();  // Use the base class method
+            // Implement actual damage here
+        }
+    }
 };
 
-class BattleShip : public MovingShip, public shootingShip, public SeeingRobot
-{
+// SeeingRobot class
+class SeeingRobot : public virtual ship {  // Add virtual inheritance
+protected:
+    bool canSeePosition(int fromX, int fromY, int toX, int toY) const {
+        return calculateDistance(fromX, fromY, toX, toY) <= 3;
+    }
 };
-class Cruiser : public MovingShip, public RamShip, public SeeingRobot
-{
+
+// RamShip class
+class RamShip : public virtual ship {  // Add virtual inheritance
+protected:
+    void ramShip(int targetX, int targetY, char grid[10][10]) {
+        if (grid[targetX][targetY] != '0' && grid[targetX][targetY] != '1') {
+            addKill();  // Use the base class method
+            // Implement ship destruction here
+        }
+    }
 };
-class Destroyer : public MovingShip, public shootingShip, public RamShip, public SeeingRobot
-{
+
+// BattleShip class
+class BattleShip : public MovingShip, public shootingShip, public SeeingRobot {
+private:
+    bool isUpgraded = false;
+
+public:
+    void performTurn(int currentX, int currentY, char grid[10][10]) {
+        // First move
+        pair<int, int> moveTarget = findNeighborPosition(currentX, currentY, grid);
+        if (canMoveToLocation(grid[moveTarget.first][moveTarget.second])) {
+            currentX = moveTarget.first;
+            currentY = moveTarget.second;
+        }
+        
+        // Then shoot twice
+        for (int i = 0; i < 2; i++) {
+            pair<int, int> target = getRandomTarget(currentX, currentY);
+            fireAt(target.first, target.second, grid);
+        }
+        
+        // Check for upgrade to Destroyer
+        if (getKills() >= 4) isUpgraded = true;
+    }
+    
+    char spawn() override { return 'B'; }
 };
-class Frigate : public shootingShip
-{
+
+// Cruiser class
+class Cruiser : public MovingShip, public RamShip, public SeeingRobot {
+private:
+    bool isUpgraded = false;
+
+public:
+    void performTurn(int currentX, int currentY, char grid[10][10]) {
+        // Look for ships in 3x3 neighborhood
+        for (int i = max(0, currentX-1); i <= min(9, currentX+1); i++) {
+            for (int j = max(0, currentY-1); j <= min(9, currentY+1); j++) {
+                if (grid[i][j] != '0' && grid[i][j] != '1') {
+                    ramShip(i, j, grid);
+                    return;
+                }
+            }
+        }
+        
+        // If no ships found, move randomly in neighborhood
+        pair<int, int> moveTarget = findNeighborPosition(currentX, currentY, grid);
+        if (canMoveToLocation(grid[moveTarget.first][moveTarget.second])) {
+            currentX = moveTarget.first;
+            currentY = moveTarget.second;
+        }
+        
+        // Check for upgrade to Destroyer
+        if (getKills() >= 3) isUpgraded = true;
+    }
+    
+    char spawn() override { return 'C'; }
 };
-class Corvette : public shootingShip, public SeeingRobot
-{
+
+// Destroyer class
+class Destroyer : public MovingShip, public shootingShip, public RamShip, public SeeingRobot {
+private:
+    bool isUpgraded = false;
+
+public:
+    void performTurn(int currentX, int currentY, char grid[10][10]) {
+        // First try to ram nearby ships
+        for (int i = max(0, currentX-1); i <= min(9, currentX+1); i++) {
+            for (int j = max(0, currentY-1); j <= min(9, currentY+1); j++) {
+                if (grid[i][j] != '0' && grid[i][j] != '1') {
+                    ramShip(i, j, grid);
+                    break;
+                }
+            }
+        }
+        
+        // Then shoot twice like Battleship
+        for (int i = 0; i < 2; i++) {
+            pair<int, int> target = getRandomTarget(currentX, currentY);
+            fireAt(target.first, target.second, grid);
+        }
+        
+        // Check for upgrade to SuperShip
+        if (getKills() >= 3) isUpgraded = true;
+    }
+    
+    char spawn() override { return 'D'; }
 };
-class Amphibious : public MovingShip, public shootingShip, public SeeingRobot
-{
+
+// Frigate class
+class Frigate : public shootingShip {
+private:
+    int currentDirection = 0;  // 0=up, 1=right, 2=down, 3=left
+
+public:
+    void performTurn(int currentX, int currentY, char grid[10][10]) {
+        const int dx[] = {-1, 0, 1, 0};
+        const int dy[] = {0, 1, 0, -1};
+        
+        int targetX = currentX + dx[currentDirection];
+        int targetY = currentY + dy[currentDirection];
+        
+        if (targetX >= 0 && targetX < 10 && targetY >= 0 && targetY < 10) {
+            fireAt(targetX, targetY, grid);
+        }
+        
+        currentDirection = (currentDirection + 1) % 4;
+    }
+    
+    char spawn() override { return 'F'; }
 };
-class Supership : public MovingShip, public shootingShip, public RamShip, public SeeingRobot
-{
+
+// Corvette class
+class Corvette : public shootingShip, public SeeingRobot {
+public:
+    void performTurn(int currentX, int currentY, char grid[10][10]) {
+        int dx = getRandomNumber(-1, 1);
+        int dy = getRandomNumber(-1, 1);
+        
+        int targetX = max(0, min(9, currentX + dx));
+        int targetY = max(0, min(9, currentY + dy));
+        
+        if (targetX != currentX || targetY != currentY) {
+            fireAt(targetX, targetY, grid);
+        }
+    }
+    
+    char spawn() override { return 'V'; }
 };
+
+// Amphibious class
+class Amphibious : public MovingShip, public shootingShip, public SeeingRobot {
+private:
+    bool isUpgraded = false;
+
+protected:
+    bool canMoveToLocation(char targetCell) const override { // Properly overrides the base class function
+        return targetCell == '0' || targetCell == '1';
+    }
+
+public:
+    void performTurn(int currentX, int currentY, char grid[10][10]) {
+        pair<int, int> moveTarget = findNeighborPosition(currentX, currentY, grid);
+        if (canMoveToLocation(grid[moveTarget.first][moveTarget.second])) {
+            currentX = moveTarget.first;
+            currentY = moveTarget.second;
+        }
+        
+        for (int i = 0; i < 2; i++) {
+            pair<int, int> target = getRandomTarget(currentX, currentY);
+            fireAt(target.first, target.second, grid);
+        }
+        
+        if (getKills() >= 4) isUpgraded = true;
+    }
+    
+    char spawn() override { return 'A'; }
+};
+
+// Supership class
+class Supership : public MovingShip, public shootingShip, public RamShip, public SeeingRobot {
+public:
+    void performTurn(int currentX, int currentY, char grid[10][10]) {
+        // Move like Cruiser and destroy ships in path
+        for (int i = max(0, currentX-1); i <= min(9, currentX+1); i++) {
+            for (int j = max(0, currentY-1); j <= min(9, currentY+1); j++) {
+                if (grid[i][j] != '0' && grid[i][j] != '1') {
+                    ramShip(i, j, grid);
+                    currentX = i;
+                    currentY = j;
+                    break;
+                }
+            }
+        }
+        
+        // Shoot at 3 random locations
+        for (int i = 0; i < 3; i++) {
+            int targetX = getRandomNumber(0, 9);
+            int targetY = getRandomNumber(0, 9);
+            fireAt(targetX, targetY, grid);
+        }
+    }
+    
+    char spawn() override { return 'S'; }
+};
+
 
 int main() {
  Battlefield battlefield;
