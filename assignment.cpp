@@ -10,12 +10,12 @@ Tutorial Section: TT4L
 Email: 1221304904@student.mmu.edu.my
 Phone: 018-3553588
 
-Name: Frank Carrano
-ID: 1071001234
-Lecture Section: TC101
-Tutorial Section: TT1L
-Email: abc123@yourmail.com
-Phone: 018-1234567
+Name: Abdul Nasser Kolathumkara Muhammed Nazim
+ID: 241UC241F9
+Lecture Section: TC1L
+Tutorial Section: TT4L
+Email: abdul.nasser.kolathumkara@student.mmu.edu.my
+Phone: 014-9323413
 
 Name: Frank Carrano
 ID: 1071001234
@@ -94,10 +94,10 @@ public:
     {
         lives--;
     }
-
     virtual char spawn();//pure virtual so build your own spawn in the ship
-};
 
+bool move(int &a, int &b, char grid[10][10]);
+};
 
 class MovingShip : public ship
 {
@@ -154,3 +154,48 @@ int main() {
  logFile.close();
  return 0;
 }
+
+bool ship::move(int &a, int &b, char grid[10][10])
+    {
+        char input;
+        cout << endl
+             << "input direction(l, r, u, d, e to end): ";
+        cin >> input;
+
+        int new_a = a;
+        int new_b = b;
+
+        switch (input)
+        {
+        case 'u':
+            new_a = (a > 0) ? a - 1 : a; // Move up
+            break;
+        case 'd':
+            new_a = (a < 9) ? a + 1 : a; // Move down
+            break;
+        case 'r':
+            new_b = (b < 9) ? b + 1 : b; // Move right
+            break;
+        case 'l':
+            new_b = (b > 0) ? b - 1 : b; // Move left
+            break;
+        case 'e':
+            return false; // End the loop
+        default:
+            cout << "Invalid input!" << endl;
+            return true; // Continue the loop
+        }
+
+        // Check if the target space is '0'
+        if (grid[new_a][new_b] == '0')
+        {
+            a = new_a;
+            b = new_b;
+        }
+        else
+        {
+            cout << "Cannot move to the target space, it's not '0'!" << endl;
+        }
+
+        return true; // Continue the loop
+    }
