@@ -149,8 +149,8 @@ protected:
     
     void fireAt(int targetX, int targetY, char grid[10][10]) {
         if (grid[targetX][targetY] != '0' && grid[targetX][targetY] != '1') {
-            addKill();  // Use the base class method
-            // Implement actual damage here
+            addKill(); 
+           
         }
     }
 };
@@ -168,8 +168,8 @@ class RamShip : public virtual ship {  // Add virtual inheritance
 protected:
     void ramShip(int targetX, int targetY, char grid[10][10]) {
         if (grid[targetX][targetY] != '0' && grid[targetX][targetY] != '1') {
-            addKill();  // Use the base class method
-            // Implement ship destruction here
+            addKill();  
+            
         }
     }
 };
