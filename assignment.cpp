@@ -510,10 +510,16 @@ int main()
     cout << "Initial Battlefield:" << endl;
     battlefield.display();
 
+    // Open a log file to log the battlefield state
+    ofstream logFile("battlefield_log.txt");
+
     // Simulation: run several turns
     const int iterations = 10;
     for (int turn = 0; turn < iterations; turn++)
     {
+        // Log the current state to the file after each turn
+        battlefield.logToFile(logFile);
+
         // Clear the battlefield cells that are not islands.
         for (int i = 0; i < HEIGHT; i++)
         {
@@ -566,6 +572,9 @@ int main()
         battlefield.display();
     }
 
+    // Close the log file
+    logFile.close();
+    
     // Clean up dynamically allocated ships
     for (auto s : fleet)
     {
