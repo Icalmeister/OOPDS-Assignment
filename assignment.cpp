@@ -698,8 +698,7 @@ int main()
                 {
                     if ("Supership" == teamA.ships[j]) //&& ship exist on list
                     {
-                        if (ss->isAlive())
-                            if (cr->isAlive())
+                            if (ss->isAlive())
                                 ss->performTurn(positions[i].first, positions[i].second, battlefield.grid);
                             else // Ship is destroyed
                                 battlefield.grid[positions[i].first][positions[i].second] = EMPTY;
