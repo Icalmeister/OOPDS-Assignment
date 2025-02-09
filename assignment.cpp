@@ -33,12 +33,14 @@ Phone: 018-1234567
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <cstdlib>   // For rand() and srand()
 #include <ctime>     // For time()
 #include <random>    // For random_device, mt19937, uniform_int_distribution
 #include <algorithm> // For min and max
+#include <cctype>
 using namespace std;
 
 // Constants for battlefield
@@ -47,25 +49,29 @@ const int HEIGHT = 10;
 const char EMPTY = '0';
 const char ISLAND = '1';
 
-// Battlefield structure
 struct Battlefield
 {
     char grid[HEIGHT][WIDTH];
 
-    // Initialize the battlefield with empty spaces and islands
-    void initialize()
+    // Initialize the battlefield by reading from a file
+    void initialize(const string &filename)
     {
+        ifstream inFile(filename);
+        if (!inFile)
+        {
+            cerr << "Error opening file: " << filename << endl;
+            exit(1);
+        }
+
         for (int i = 0; i < HEIGHT; i++)
         {
             for (int j = 0; j < WIDTH; j++)
             {
-                grid[i][j] = EMPTY;
+                inFile >> grid[i][j]; // Read each character into the grid
             }
         }
-        // Example: Placing islands (you can also use file input)
-        grid[1][6] = ISLAND;
-        grid[2][6] = ISLAND;
-        grid[3][6] = ISLAND;
+
+        inFile.close();
     }
 
     // Display the battlefield
@@ -82,7 +88,6 @@ struct Battlefield
         cout << endl;
     }
 
-    // Log the battlefield to a file
     void logToFile(ofstream &logFile)
     {
         logFile << "Battlefield State:\n";
@@ -97,7 +102,76 @@ struct Battlefield
         logFile << endl;
     }
 };
+struct Team
+{
+    int shipCount;
+    vector<string> ships;
+};
 
+void parseShipData(const string &filename, int &iterations, Team &teamA, Team &teamB)
+{
+    ifstream file(filename);
+    if (!file)
+    {
+        cerr << "Error opening file!" << endl;
+        return;
+    }
+
+    string line;
+    Team *currentTeam = nullptr;
+    bool isReadingShips = true; // Flag to stop reading ships when the grid starts
+
+    while (getline(file, line))
+    {
+        istringstream iss(line);
+        string firstWord;
+        iss >> firstWord; // Read the first word
+
+        // Stop processing ship data if the first word is a digit (grid starts)
+        if (isdigit(firstWord[0]))
+        {
+            break;
+        }
+
+        if (firstWord == "iterations")
+        {
+            iss >> iterations;
+        }
+        else if (firstWord == "Team")
+        {
+            string teamName;
+            int shipCount;
+            iss >> teamName >> shipCount;
+
+            if (teamName == "A")
+            {
+                teamA.shipCount = shipCount;
+                currentTeam = &teamA;
+            }
+            else if (teamName == "B")
+            {
+                teamB.shipCount = shipCount;
+                currentTeam = &teamB;
+            }
+        }
+        else if (currentTeam && isReadingShips)
+        {
+            string shipName = firstWord;
+            string extra;
+
+            // Ignore any additional symbols or numbers after the ship name
+            while (iss >> extra)
+            {
+                if (isdigit(extra[0]))
+                    break; // Stop if a number is encountered
+            }
+
+            currentTeam->ships.push_back(shipName);
+        }
+    }
+
+    file.close();
+}
 int getRandomNumber(int min, int max)
 {
     static random_device rd;
@@ -471,7 +545,11 @@ int main()
     srand(time(0)); // Seed the C random number generator (if needed)
 
     Battlefield battlefield;
-    battlefield.initialize();
+    string filename = "battlefield.txt";
+    battlefield.initialize(filename);
+    int iterations;
+    Team teamA, teamB;
+    parseShipData("game.txt", iterations, teamA, teamB);
 
     // Create a fleet of ships (one of each type)
     vector<ship *> fleet;
@@ -495,7 +573,7 @@ int main()
     // For each ship, choose a random empty location on the battlefield and place it.
     // We also keep track of each ship's current position.
     vector<pair<int, int>> positions;
-    for (size_t i = 0; i < fleet.size(); i++)
+    for (size_t i = 0; i < teamA.ships.size(); i++)
     {
         int x, y;
         do
@@ -504,7 +582,45 @@ int main()
             y = getRandomNumber(0, WIDTH - 1);
         } while (battlefield.grid[x][y] != EMPTY);
         positions.push_back(make_pair(x, y));
-        battlefield.grid[x][y] = fleet[i]->spawn();
+        if (teamA.ships[i] == "Battleship")
+            battlefield.grid[x][y] = battleship->spawn();
+        else if (teamA.ships[i] == "Cruiser")
+            battlefield.grid[x][y] = cruiser->spawn();
+        else if (teamA.ships[i] == "Destroyer")
+            battlefield.grid[x][y] = destroyer->spawn();
+        else if (teamA.ships[i] == "Frigate")
+            battlefield.grid[x][y] = frigate->spawn();
+        else if (teamA.ships[i] == "Corvette")
+            battlefield.grid[x][y] = corvette->spawn();
+        else if (teamA.ships[i] == "Amphibious")
+            battlefield.grid[x][y] = amphibious->spawn();
+        else if (teamA.ships[i] == "Supership")
+            battlefield.grid[x][y] = supership->spawn();
+    }
+
+    for (size_t i = 0; i < teamB.ships.size(); i++)
+    {
+        int x, y;
+        do
+        {
+            x = getRandomNumber(0, HEIGHT - 1);
+            y = getRandomNumber(0, WIDTH - 1);
+        } while (battlefield.grid[x][y] != EMPTY);
+        positions.push_back(make_pair(x, y));
+        if (teamB.ships[i] == "Battleship")
+            battlefield.grid[x][y] = battleship->spawn();
+        else if (teamB.ships[i] == "Cruiser")
+            battlefield.grid[x][y] = cruiser->spawn();
+        else if (teamB.ships[i] == "Destroyer")
+            battlefield.grid[x][y] = destroyer->spawn();
+        else if (teamB.ships[i] == "Frigate")
+            battlefield.grid[x][y] = frigate->spawn();
+        else if (teamB.ships[i] == "Corvette")
+            battlefield.grid[x][y] = corvette->spawn();
+        else if (teamB.ships[i] == "Amphibious")
+            battlefield.grid[x][y] = amphibious->spawn();
+        else if (teamB.ships[i] == "Supership")
+            battlefield.grid[x][y] = supership->spawn();
     }
 
     cout << "Initial Battlefield:" << endl;
@@ -514,7 +630,7 @@ int main()
     ofstream logFile("battlefield_log.txt");
 
     // Simulation: run several turns
-    const int iterations = 10;
+
     for (int turn = 0; turn < iterations; turn++)
     {
         // Log the current state to the file after each turn
@@ -531,42 +647,145 @@ int main()
         }
         // For each ship, perform its turn.
         // Note: Only ships that use movement will update their stored positions.
-        for (size_t i = 0; i < fleet.size(); i++)
+        for (int i = 0; i < fleet.size(); i++)
         {
-            // Use dynamic_cast to check if the ship has a performTurn that accepts position by reference.
-            // For those that do, we pass the stored position so that movement is recorded.
-            // (For example, Frigate and Corvette do not update their positions.)
-            if (BattleShip *bs = dynamic_cast<BattleShip *>(fleet[i]))
+            for (int j = 0; j < teamA.ships.size(); j++)
             {
-                bs->performTurn(positions[i].first, positions[i].second, battlefield.grid);
-            }
-            else if (Cruiser *cr = dynamic_cast<Cruiser *>(fleet[i]))
-            {
-                cr->performTurn(positions[i].first, positions[i].second, battlefield.grid);
-            }
-            else if (Destroyer *ds = dynamic_cast<Destroyer *>(fleet[i]))
-            {
-                ds->performTurn(positions[i].first, positions[i].second, battlefield.grid);
-            }
-            else if (Amphibious *am = dynamic_cast<Amphibious *>(fleet[i]))
-            {
-                am->performTurn(positions[i].first, positions[i].second, battlefield.grid);
-            }
-            else if (Supership *ss = dynamic_cast<Supership *>(fleet[i]))
-            {
-                ss->performTurn(positions[i].first, positions[i].second, battlefield.grid);
-            }
-            else if (Frigate *fg = dynamic_cast<Frigate *>(fleet[i]))
-            {
-                fg->performTurn(positions[i].first, positions[i].second, battlefield.grid);
-            }
-            else if (Corvette *cv = dynamic_cast<Corvette *>(fleet[i]))
-            {
-                cv->performTurn(positions[i].first, positions[i].second, battlefield.grid);
-            }
+                // Use dynamic_cast to check if the ship has a performTurn that accepts position by reference.
+                // For those that do, we pass the stored position so that movement is recorded.
+                // (For example, Frigate and Corvette do not update their positions.)
+                if (BattleShip *bs = dynamic_cast<BattleShip *>(fleet[i]))
+                {
+                    if ("Battleship" == teamA.ships[j]) //&& ship exist on list
+                    {
+                        if (bs->isAlive())
+                            bs->performTurn(positions[i].first, positions[i].second, battlefield.grid);
+                        else // Ship is destroyed
+                            battlefield.grid[positions[i].first][positions[i].second] = EMPTY;
+                    }
+                }
+                else if (Cruiser *cr = dynamic_cast<Cruiser *>(fleet[i]))
+                {
+                    if ("Cruiser" == teamA.ships[j]) //&& ship exist on list
+                    {
+                        if (cr->isAlive())
+                            cr->performTurn(positions[i].first, positions[i].second, battlefield.grid);
+                        else // Ship is destroyed
+                            battlefield.grid[positions[i].first][positions[i].second] = EMPTY;
+                    }
+                }
+                else if (Destroyer *ds = dynamic_cast<Destroyer *>(fleet[i]))
+                {
+                    if ("Destroyer" == teamA.ships[j]) //&& ship exist on list
+                    {
+                        if (ds->isAlive())
+                            ds->performTurn(positions[i].first, positions[i].second, battlefield.grid);
+                        else // Ship is destroyed
+                            battlefield.grid[positions[i].first][positions[i].second] = EMPTY;
+                    }
+                }
+                else if (Amphibious *am = dynamic_cast<Amphibious *>(fleet[i]))
+                {
+                    if ("Amphibious" == teamA.ships[j]) //&& ship exist on list
+                    {
+                        if (am->isAlive())
+                            am->performTurn(positions[i].first, positions[i].second, battlefield.grid);
+                        else // Ship is destroyed
+                            battlefield.grid[positions[i].first][positions[i].second] = EMPTY;
+                    }
+                }
+                else if (Supership *ss = dynamic_cast<Supership *>(fleet[i]))
+                {
+                    if ("Supership" == teamA.ships[j]) //&& ship exist on list
+                    {
+                        if (ss->isAlive())
+                            if (cr->isAlive())
+                                ss->performTurn(positions[i].first, positions[i].second, battlefield.grid);
+                            else // Ship is destroyed
+                                battlefield.grid[positions[i].first][positions[i].second] = EMPTY;
+                    }
+                }
+                else if (Frigate *fg = dynamic_cast<Frigate *>(fleet[i]))
+                {
+                    if ("Frigate" == teamA.ships[j]) //&& ship exist on list
+                    {
+                        if (fg->isAlive())
+                            fg->performTurn(positions[i].first, positions[i].second, battlefield.grid);
+                        else // Ship is destroyed
+                            battlefield.grid[positions[i].first][positions[i].second] = EMPTY;
+                    }
+                }
+                else if (Corvette *cv = dynamic_cast<Corvette *>(fleet[i]))
+                {
+                    if ("Corvette" == teamA.ships[j]) //&& ship exist on list
+                    {
+                        if (cv->isAlive())
+                            cv->performTurn(positions[i].first, positions[i].second, battlefield.grid);
+                        else // Ship is destroyed
+                            battlefield.grid[positions[i].first][positions[i].second] = EMPTY;
+                    }
+                }
 
-            // Place the ship on the battlefield using its spawn symbol.
-            battlefield.grid[positions[i].first][positions[i].second] = fleet[i]->spawn();
+                // Place the ship on the battlefield using its spawn symbol.
+                if (fleet[i]->isAlive())
+                    battlefield.grid[positions[i].first][positions[i].second] = fleet[i]->spawn();
+            }
+            for (int j = 0; j < teamB.ships.size(); j++)
+            {
+                // Use dynamic_cast to check if the ship has a performTurn that accepts position by reference.
+                // For those that do, we pass the stored position so that movement is recorded.
+                // (For example, Frigate and Corvette do not update their positions.)
+                if (BattleShip *bs = dynamic_cast<BattleShip *>(fleet[i]))
+                {
+                    if ("Battleship" == teamB.ships[j]) //&& ship exist on list
+                    {
+                        bs->performTurn(positions[i].first, positions[i].second, battlefield.grid);
+                    }
+                }
+                else if (Cruiser *cr = dynamic_cast<Cruiser *>(fleet[i]))
+                {
+                    if ("Cruiser" == teamB.ships[j]) //&& ship exist on list
+                    {
+                        cr->performTurn(positions[i].first, positions[i].second, battlefield.grid);
+                    }
+                }
+                else if (Destroyer *ds = dynamic_cast<Destroyer *>(fleet[i]))
+                {
+                    if ("Destroyer" == teamB.ships[j]) //&& ship exist on list
+                    {
+                        ds->performTurn(positions[i].first, positions[i].second, battlefield.grid);
+                    }
+                }
+                else if (Amphibious *am = dynamic_cast<Amphibious *>(fleet[i]))
+                {
+                    if ("Amphibious" == teamB.ships[j]) //&& ship exist on list
+                    {
+                        am->performTurn(positions[i].first, positions[i].second, battlefield.grid);
+                    }
+                }
+                else if (Supership *ss = dynamic_cast<Supership *>(fleet[i]))
+                {
+                    if ("Supership" == teamB.ships[j]) //&& ship exist on list
+                    {
+                        ss->performTurn(positions[i].first, positions[i].second, battlefield.grid);
+                    }
+                }
+                else if (Frigate *fg = dynamic_cast<Frigate *>(fleet[i]))
+                {
+                    if ("Frigate" == teamB.ships[j]) //&& ship exist on list
+                    {
+                        fg->performTurn(positions[i].first, positions[i].second, battlefield.grid);
+                    }
+                }
+                else if (Corvette *cv = dynamic_cast<Corvette *>(fleet[i]))
+                {
+                    if ("Corvette" == teamB.ships[j]) //&& ship exist on list
+                    {
+                        cv->performTurn(positions[i].first, positions[i].second, battlefield.grid);
+                    }
+                }
+                battlefield.grid[positions[i].first][positions[i].second] = fleet[i]->spawn();
+            }
         }
         cout << "After Turn " << turn + 1 << ":" << endl;
         battlefield.display();
@@ -574,7 +793,7 @@ int main()
 
     // Close the log file
     logFile.close();
-    
+
     // Clean up dynamically allocated ships
     for (auto s : fleet)
     {
