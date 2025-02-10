@@ -16,12 +16,12 @@ Tutorial Section: TT4L
 Email: abdul.nasser.kolathumkara@student.mmu.edu.my
 Phone: 014-9323413
 
-Name: Frank Carrano
-ID: 1071001234
-Lecture Section: TC101
-Tutorial Section: TT1L
-Email: abc123@yourmail.com
-Phone: 018-1234567
+Name: Muhammad Harith Arsyad Bin Mohd Fauzi
+ID: 241UC240DB
+Lecture Section: TC1L
+Tutorial Section: TT4L
+Email: muhammad.harith.arsyad@student.mmu.edu.my
+Phone: 019-6531584
 
 Name: Frank Carrano
 ID: 1071001234
